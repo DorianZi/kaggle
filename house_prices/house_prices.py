@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 #from sklearn.ensemble import RandomForestRegressor
 from xgboost import XGBRegressor
-from sklearn.cross_validation import train_test_split
+from sklearn.model_selection import train_test_split
 import sys
 import seaborn as sns
 import matplotlib.pyplot as plt
