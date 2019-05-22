@@ -7,7 +7,6 @@ from sklearn.model_selection import train_test_split
 import sys
 import seaborn as sns
 import matplotlib.pyplot as plt
-from scipy.stats import norm, skew 
 
 class housePricePredictor:
     def __init__(self):
@@ -187,7 +186,9 @@ class housePricePredictor:
         print "Done"
         print "======================================================================================\n"
 
- 
+
+    
+    
  
 if __name__ == "__main__":
     predictor = housePricePredictor()
