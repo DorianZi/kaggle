@@ -76,38 +76,32 @@ class housePricePredictor:
 
     def fillMissingData(self):
         print "============================ Fill missing data  ====================================="
-        count = self.allDF.isnull().sum().sort_values(ascending=False)
-        ratio = count/len(self.allDF)
+        ratio = (self.allDF.isnull().sum()/len(self.allDF)).sort_values(ascending=False)
         print "[Before]Top Na Columns:\n",ratio.head(20)
         print "Removing columns whose ratio>0.8 :", ratio[ratio > 0.8].index
         self.allDF = self.allDF.drop(ratio[ratio > 0.8].index, axis=1)
         print "Done removing"
-        #self.allDF['PoolQC'] = self.allDF['PoolQC'].fillna('None')
-        #self.allDF['MiscFeature'] = self.allDF['MiscFeature'].fillna('None')
-        #self.allDF['Alley'] = self.allDF['Alley'].fillna('None')
-        #self.allDF['Fence'] = self.allDF['Fence'].fillna('None')
-        self.allDF['FireplaceQu'] = self.allDF['FireplaceQu'].fillna('None')
+
         self.allDF["LotFrontage"] = self.allDF.groupby("Neighborhood")["LotFrontage"].transform(
                 lambda x: x.fillna(x.median()))
-        for col in ('GarageType', 'GarageFinish', 'GarageQual', 'GarageCond'):
+
+        for col in ('FireplaceQu',\
+                    'GarageType', 'GarageFinish', 'GarageQual', 'GarageCond', \
+                    'BsmtQual', 'BsmtCond', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2',\
+                    'MasVnrType',\
+                    'MSSubClass'):
                 self.allDF[col] = self.allDF[col].fillna('None')
-        for col in ('GarageYrBlt', 'GarageArea', 'GarageCars'):
+
+        for col in ('GarageYrBlt', 'GarageArea', 'GarageCars',\
+                    'BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF','TotalBsmtSF', 'BsmtFullBath', 'BsmtHalfBath',\
+                    'MasVnrArea'):
                 self.allDF[col] = self.allDF[col].fillna(0)
-        for col in ('BsmtFinSF1', 'BsmtFinSF2', 'BsmtUnfSF','TotalBsmtSF', 'BsmtFullBath', 'BsmtHalfBath'):
-                self.allDF[col] = self.allDF[col].fillna(0)
-        for col in ('BsmtQual', 'BsmtCond', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2'):
-                self.allDF[col] = self.allDF[col].fillna('None')
-        self.allDF["MasVnrType"] = self.allDF["MasVnrType"].fillna("None")
-        self.allDF["MasVnrArea"] = self.allDF["MasVnrArea"].fillna(0)
-        self.allDF['MSZoning'] = self.allDF['MSZoning'].fillna(self.allDF['MSZoning'].mode()[0])
+
         self.allDF = self.allDF.drop(['Utilities'], axis=1)
-        self.allDF["Functional"] = self.allDF["Functional"].fillna("Typ")
-        self.allDF['Electrical'] = self.allDF['Electrical'].fillna(self.allDF['Electrical'].mode()[0])
-        self.allDF['KitchenQual'] = self.allDF['KitchenQual'].fillna(self.allDF['KitchenQual'].mode()[0])
-        self.allDF['Exterior1st'] = self.allDF['Exterior1st'].fillna(self.allDF['Exterior1st'].mode()[0])
-        self.allDF['Exterior2nd'] = self.allDF['Exterior2nd'].fillna(self.allDF['Exterior2nd'].mode()[0])
-        self.allDF['SaleType'] = self.allDF['SaleType'].fillna(self.allDF['SaleType'].mode()[0])
-        self.allDF['MSSubClass'] = self.allDF['MSSubClass'].fillna("None")
+        for col in ('MSZoning','Functional','Electrical','KitchenQual',\
+            'Exterior1st','Exterior2nd','SaleType'):
+                self.allDF[col] = self.allDF[col].fillna(self.allDF[col].mode()[0])
+
         count = self.allDF.isnull().sum().sort_values(ascending=False)
         ratio = count/len(self.allDF)
         print "[After]Top Na Columns:\n",ratio.head(20)
@@ -133,46 +127,9 @@ class housePricePredictor:
         print "Done"
         print "====================================================================================\n"
 
-    def transferCateToLabelencoder(self): 
-        print "===================== transfer category to labelEcoder ==============================="
-        from sklearn.preprocessing import LabelEncoder
-        cateCols = ['FireplaceQu', 'BsmtQual', 'BsmtCond', 'GarageQual', 'GarageCond',\
-                'ExterQual', 'ExterCond','HeatingQC', 'PoolQC', 'KitchenQual', \
-                'BsmtFinType1', 'BsmtFinType2', 'Functional', 'Fence', 'BsmtExposure',\
-                'GarageFinish', 'LandSlope','LotShape', 'PavedDrive', 'Street', 'Alley',\
-                'CentralAir', 'MSSubClass', 'OverallCond', 'YrSold', 'MoSold']
-        for col in set(cateCols).intersection(self.allDF.columns):
-            lbl = LabelEncoder()
-            lbl.fit(list(self.allDF[col].values))
-            self.allDF[col] = lbl.transform(list(self.allDF[col].values))
-        print "Done"
-        print "======================================================================================\n"
-
 
     def createMoreFeature(self):
         self.allDF['TotalSF'] = self.allDF['TotalBsmtSF'] + self.allDF['1stFlrSF'] + self.allDF['2ndFlrSF']
-
-
-    def transformSkewedFeatures(self):
-        print "========================= transform skewed data ======================================="
-        numeric_feats = self.allDF.dtypes[self.allDF.dtypes != "object"].index
-        skewed_feats = self.allDF[numeric_feats].apply(lambda x: x.dropna().skew()).sort_values(ascending=False)
-        print("\nSkew in numerical features: \n")
-        skewness = pd.DataFrame({'Skew' :skewed_feats})
-        print "before:", skewness.shape
-
-        skewness = skewness[abs(skewness) > 0.75].dropna()
-        print "Transforming whose absolute skewness > 0.75"
-
-        print("{} skewed numerical features to be tranformed with Box Cox".format(skewness.shape[0]))
-
-        from scipy.special import boxcox1p
-        skewed_features = skewness.index
-        lam = 0.15
-        for feat in skewed_features:
-                self.allDF[feat] = boxcox1p(self.allDF[feat], lam)
-        print "Done"
-        print "======================================================================================\n"
 
     def getDummyAllDF(self):
         self.dm_allDF = pd.get_dummies(self.allDF)
@@ -189,22 +146,24 @@ class housePricePredictor:
 
 
     def getTrainTestValues(self): 
-        self.X_train = self.dm_trainDF.drop(['Id'],axis=1).values
-        self.Y_train = self.trainDF_label.values
+        self.train_data = self.dm_trainDF.drop(['Id'],axis=1).values
+        self.train_label = self.trainDF_label.values
         
         self.X_test_ids = self.dm_testDF['Id'].values
         self.X_test = self.dm_testDF.drop(['Id'],axis=1).values
 
+        self.X_train, self.X_valid, self.Y_train, self.Y_valid = train_test_split(self.train_data, self.train_label,test_size=0.2)
 
     def createModel(self):
         print "============================Create Train Model=========================================="
-        self.xgb = XGBRegressor(n_estimators=1000, learning_rate=0.05)
+        self.xgb = XGBRegressor(n_estimators=500, learning_rate=0.05, min_child_weight=5, max_depth=4)
         print "Done"
         print "======================================================================================\n"
 
     def train(self):
         print "===================================Train================================================"
         self.xgb.fit(self.X_train,self.Y_train)#,early_stopping_rounds=5)
+        print "Validation:",self.xgb.score(self.X_valid,self.Y_valid)
         print "Done"
         print "======================================================================================\n"
 
@@ -228,23 +187,19 @@ class housePricePredictor:
         print "Done"
         print "======================================================================================\n"
 
-
-    
-    
+ 
  
 if __name__ == "__main__":
     predictor = housePricePredictor()
     predictor.getTrainTestDF()
-    try: predictor.drawByTrainDF()
-    except: pass
+    #try: predictor.drawByTrainDF()
+    #except: pass
     predictor.dropRowsTrainDF()
     predictor.transferTrainToLog()
     predictor.getJoinedDF()
     predictor.fillMissingData()
     predictor.transferNumToCate()
-    predictor.transferCateToLabelencoder()
     predictor.createMoreFeature()
-    predictor.transformSkewedFeatures()
     predictor.getDummyAllDF()
     #predictor.printAllDF()
     #predictor.printDummytAllDF()
@@ -254,4 +209,3 @@ if __name__ == "__main__":
     predictor.train()
     predictor.predict()
     predictor.savePrediction()
-
