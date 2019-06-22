@@ -162,7 +162,9 @@ class housePricePredictor:
     def train(self):
         print "===================================Train================================================"
         self.xgb.fit(self.X_train,self.Y_train)#,early_stopping_rounds=5)
-        print "Validation:",self.xgb.score(self.X_valid,self.Y_valid)
+        valid_pred = self.xgb.predict(self.X_valid)
+        from sklearn import metrics
+        print "Validation:", np.sqrt(metrics.mean_squared_error(self.Y_valid, valid_pred))
         print "Done"
         print "======================================================================================\n"
 
